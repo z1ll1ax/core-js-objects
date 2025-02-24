@@ -377,33 +377,144 @@ function group(array, keySelector, valueSelector) {
  *  For more examples see unit tests.
  */
 
+class Selector {
+  constructor() {
+    this.arr = [];
+    this.order = [
+      'element',
+      'id',
+      'class',
+      'attr',
+      'pseudoClass',
+      'pseudoElement',
+    ];
+  }
+
+  checkOrder(newPartType) {
+    if (!this.arr.length) return true;
+
+    const lastPartType = this.arr[this.arr.length - 1].type;
+    const lastIndex = this.order.indexOf(lastPartType);
+    const newIndex = this.order.indexOf(newPartType);
+
+    if (newIndex < lastIndex) {
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    }
+    return true;
+  }
+
+  element(value) {
+    if (this.arr.some((part) => part.type === 'element')) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector'
+      );
+    }
+    this.checkOrder('element');
+    this.arr.push({ type: 'element', value });
+    return this;
+  }
+
+  id(value) {
+    if (this.arr.some((part) => part.type === 'id')) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector'
+      );
+    }
+    this.checkOrder('id');
+    this.arr.push({ type: 'id', value });
+    return this;
+  }
+
+  class(value) {
+    this.checkOrder('class');
+    this.arr.push({ type: 'class', value });
+    return this;
+  }
+
+  attr(value) {
+    this.checkOrder('attr');
+    this.arr.push({ type: 'attr', value });
+    return this;
+  }
+
+  pseudoClass(value) {
+    this.checkOrder('pseudoClass');
+    this.arr.push({ type: 'pseudoClass', value });
+    return this;
+  }
+
+  pseudoElement(value) {
+    if (this.arr.some((part) => part.type === 'pseudoElement')) {
+      throw new Error(
+        'Element, id and pseudo-element should not occur more then one time inside the selector'
+      );
+    }
+    this.checkOrder('pseudoElement');
+    this.arr.push({ type: 'pseudoElement', value });
+    return this;
+  }
+
+  stringify() {
+    return this.arr
+      .map((part) => {
+        switch (part.type) {
+          case 'element':
+            return part.value;
+          case 'id':
+            return `#${part.value}`;
+          case 'class':
+            return `.${part.value}`;
+          case 'attr':
+            return `[${part.value}]`;
+          case 'pseudoClass':
+            return `:${part.value}`;
+          case 'pseudoElement':
+            return `::${part.value}`;
+          case 'combinator':
+            return ` ${part.value} `;
+          default:
+            return '';
+        }
+      })
+      .join('');
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return new Selector().element(value);
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return new Selector().id(value);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return new Selector().class(value);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return new Selector().attr(value);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return new Selector().pseudoClass(value);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return new Selector().pseudoElement(value);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    const combined = new Selector();
+    combined.arr = [
+      ...selector1.arr,
+      { type: 'combinator', value: combinator },
+      ...selector2.arr,
+    ];
+    return combined;
   },
 };
 
